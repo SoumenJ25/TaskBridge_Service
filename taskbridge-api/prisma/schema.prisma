@@ -1,0 +1,63 @@
+// Prisma schema for TaskBridge.
+// Only the repository layer consumes the generated client.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum ProjectStatus {
+  PLANNED
+  ACTIVE
+  BLOCKED
+  DONE
+}
+
+enum AuditEventType {
+  MILESTONE_CREATED
+  MILESTONE_STATUS_UPDATED
+  MILESTONE_DELETED
+}
+
+model Project {
+  id             String        @id @default(uuid())
+  organisationId String
+  teamId         String
+  name           String
+  status         ProjectStatus @default(PLANNED)
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  @@index([organisationId, teamId])
+}
+
+model AuditEntry {
+  id            String         @id @default(uuid())
+  eventType     AuditEventType
+  entityType    String
+  entityId      String
+  actorUserId   String
+  actorOrgId    String
+  previousState Json?
+  newState      Json?
+  createdAt     DateTime       @default(now())
+
+  @@index([entityId])
+  @@index([actorOrgId])
+}
+
+model Notification {
+  id              String   @id @default(uuid())
+  recipientUserId String
+  eventType       String
+  projectId       String
+  message         String
+  read            Boolean  @default(false)
+  createdAt       DateTime @default(now())
+
+  @@index([recipientUserId, read])
+}
