@@ -13,6 +13,7 @@
 | 3 | P3 | "@workspace how should the Project Service call the Notification & Audit Service without the two becoming tightly coupled? Suggest an integration contract." | Copilot Chat — Ask mode + `@workspace` | Decomposition + role-based | Design question about the inter-service seam; `@workspace` lets Copilot reason across both services and propose the port/adapter boundary. |
 | 4 | P3 | "Add an explicit service-layer immutability guard so any attempt to update or delete an audit entry throws, and explain why absence-of-method alone is insufficient." | Inline Chat / Edit mode | Constraint + iterative refinement | Hardens the immutability invariant so it is testable, not just implied by a missing method. |
 | 5 | P3 | "Given this AuditEntry model and multi-tenant audit service, list every file and layer affected if I add a new event type and start storing the actor's IP address, and flag privacy/retention risks." | Copilot Chat — Ask mode | Decomposition + specificity | Drives the IMPACT_ANALYSIS file-impact map before any code is written. |
+| 6 | P4 | "Write Jest tests for this notification service using in-memory repository doubles: equal fan-out to all members, audit created on update, immutability enforced, date-range filter, event-type filter, and cross-tenant denial. #file notification.service.ts" | Copilot Chat — Agent/Edit mode + `#file` | Decomposition + few-shot (enumerated cases) | Generates the required 6-case suite grounded on the actual service via `#file`. |
 
 ### WRITE 2A — Bad-generation first impressions
 
