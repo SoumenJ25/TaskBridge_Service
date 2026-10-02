@@ -35,8 +35,14 @@ const updateStatusSchema = z.object({
 export interface AuditNotificationPort {
   /** Record an audit entry and fan out notifications for a milestone change. */
   recordMilestoneChange(input: {
-    eventType: 'MILESTONE_CREATED' | 'MILESTONE_STATUS_UPDATED' | 'MILESTONE_DELETED';
+    eventType:
+      | 'MILESTONE_CREATED'
+      | 'MILESTONE_STATUS_UPDATED'
+      | 'MILESTONE_DELETED'
+      | 'MILESTONE_REOPENED';
     actor: Principal;
+    /** Actor IP address (optional PII), captured at the HTTP edge. */
+    actorIp?: string | null;
     project: Project;
     previousState: Project | null;
     newState: Project | null;
@@ -109,6 +115,41 @@ export class ProjectService {
     await this.auditPort.recordMilestoneChange({
       eventType: 'MILESTONE_STATUS_UPDATED',
       actor: principal,
+      project: updated,
+      previousState: existing,
+      newState: updated,
+    });
+
+    return updated;
+  }
+
+  /**
+   * Reopen a completed (DONE) milestone: move it back to ACTIVE and emit a MILESTONE_REOPENED audit
+   * + notifications, capturing the actor's IP address.
+   *
+   * @param principal Authenticated caller.
+   * @param id Project id.
+   * @param actorIp Optional actor IP captured at the HTTP edge (PII; never logged).
+   * @returns The reopened project.
+   * @throws NotFoundError when the project does not exist in the caller's organisation.
+   * @throws ValidationError when the project is not currently DONE.
+   */
+  async reopen(principal: Principal, id: string, actorIp?: string | null): Promise<Project> {
+    const existing = await this.repository.findByIdForOrg(principal.organisationId, id);
+    if (!existing) {
+      throw new NotFoundError(`Project ${id} not found`);
+    }
+    if (existing.status !== 'DONE') {
+      throw new ValidationError('Only a DONE milestone can be reopened');
+    }
+
+    const updated = await this.repository.updateStatus(id, 'ACTIVE');
+    logger.info('project.reopened', { projectId: id });
+
+    await this.auditPort.recordMilestoneChange({
+      eventType: 'MILESTONE_REOPENED',
+      actor: principal,
+      actorIp,
       project: updated,
       previousState: existing,
       newState: updated,

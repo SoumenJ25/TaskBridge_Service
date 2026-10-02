@@ -21,6 +21,7 @@ enum AuditEventType {
   MILESTONE_CREATED
   MILESTONE_STATUS_UPDATED
   MILESTONE_DELETED
+  MILESTONE_REOPENED
 }
 
 model Project {
@@ -42,6 +43,7 @@ model AuditEntry {
   entityId      String
   actorUserId   String
   actorOrgId    String
+  actorIp       String?
   previousState Json?
   newState      Json?
   createdAt     DateTime       @default(now())

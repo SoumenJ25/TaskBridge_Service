@@ -9,6 +9,10 @@
 | # | Phase | Prompt Text (exact) | Copilot Feature | Technique | Rationale |
 |---|-------|---------------------|-----------------|-----------|-----------|
 | 1 | P2a | "Generate a Project model and a Project service with create, update status, get by team, and delete functions. Use a database." | Copilot Chat — Ask mode | Low-specificity / unconstrained (deliberate anti-pattern) | Required by the hard sequencing rule: simulate inherited contractor code. The prompt is intentionally vague (no stack, no tenancy, no validation) so the generation exposes the gaps that the review phase must catch. |
+| 2 | P3 | "Scaffold a layered Notification & Audit service in TypeScript + Prisma for a multi-tenant app: an immutable AuditEntry (no update/delete), a Notification model, a repository (#file project.repository.ts as the pattern), and a service that records an audit entry and fans out notifications to all team members. Scope all audit reads by organisationId." | Copilot Chat — Agent/Edit mode + `#file` | Role-based + specificity + constraint | Multi-file scaffold that must match the existing repository pattern; `#file` anchors Copilot to the established layered style and tenancy rules. |
+| 3 | P3 | "@workspace how should the Project Service call the Notification & Audit Service without the two becoming tightly coupled? Suggest an integration contract." | Copilot Chat — Ask mode + `@workspace` | Decomposition + role-based | Design question about the inter-service seam; `@workspace` lets Copilot reason across both services and propose the port/adapter boundary. |
+| 4 | P3 | "Add an explicit service-layer immutability guard so any attempt to update or delete an audit entry throws, and explain why absence-of-method alone is insufficient." | Inline Chat / Edit mode | Constraint + iterative refinement | Hardens the immutability invariant so it is testable, not just implied by a missing method. |
+| 5 | P3 | "Given this AuditEntry model and multi-tenant audit service, list every file and layer affected if I add a new event type and start storing the actor's IP address, and flag privacy/retention risks." | Copilot Chat — Ask mode | Decomposition + specificity | Drives the IMPACT_ANALYSIS file-impact map before any code is written. |
 
 ### WRITE 2A — Bad-generation first impressions
 
@@ -55,3 +59,13 @@ Corrections applied during remediation:
 the four layered files consistently in one pass), with Inline Chat `/fix` and `/doc` for tightening
 individual methods and adding docstrings. Ask mode was most useful earlier, for *review*; Edit/Agent
 was most useful for *applying* the structural fix across files.
+
+### WRITE 5A — Post-Generation Corrections (Notification & Audit Service, P3)
+
+| # | What Copilot produced | What was wrong | How it was fixed |
+|---|-----------------------|----------------|------------------|
+| 1 | Audit service with a working `updateAudit`/`deleteAudit` for "admin corrections" | Breaks the immutability requirement | Removed those paths; added an explicit `modifyAuditEntry()` guard that always throws, plus a test. |
+| 2 | Audit history query without org scoping | Cross-tenant audit leak | Added `actorOrgId` scoping in the repository `where` and threaded `principal.organisationId`. |
+| 3 | Notification fan-out hard-coded to the actor only | Requirement is *all* team members | Introduced a `TeamMemberResolver` port and fan out to every member id. |
+| 4 | For the IP change, Copilot added `logger.info('audit', { ip })` | Logs PII | Removed; IP is persisted in the audit store only and never logged. |
+| 5 | `reopen` allowed from any status | Reopen should only apply to a `DONE` milestone | Added a `ValidationError` guard when status !== 'DONE'. |

@@ -63,6 +63,19 @@ export function createProjectRouter(service: ProjectService): Router {
     }
   });
 
+  router.post('/projects/:id/reopen', async (req: Request, res: Response) => {
+    try {
+      const principal = requirePrincipal(req);
+      // Capture the actor IP at the HTTP edge only (PII). It is persisted in the audit store and
+      // never written to application logs.
+      const actorIp = req.ip ?? null;
+      const project = await service.reopen(principal, req.params.id, actorIp);
+      res.status(200).json(project);
+    } catch (error) {
+      toHttpError(error, res);
+    }
+  });
+
   router.get('/projects', async (req: Request, res: Response) => {
     try {
       const principal = requirePrincipal(req);
