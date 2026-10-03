@@ -15,6 +15,10 @@
 | 5 | P3 | "Given this AuditEntry model and multi-tenant audit service, list every file and layer affected if I add a new event type and start storing the actor's IP address, and flag privacy/retention risks." | Copilot Chat — Ask mode | Decomposition + specificity | Drives the IMPACT_ANALYSIS file-impact map before any code is written. |
 | 6 | P4 | "Write Jest tests for this notification service using in-memory repository doubles: equal fan-out to all members, audit created on update, immutability enforced, date-range filter, event-type filter, and cross-tenant denial. #file notification.service.ts" | Copilot Chat — Agent/Edit mode + `#file` | Decomposition + few-shot (enumerated cases) | Generates the required 6-case suite grounded on the actual service via `#file`. |
 
+### WRITE 1A — Why I structured copilot-instructions.md this way
+
+I organised the file as a set of shared, non-negotiable constraints rather than a tutorial, so it acts as a single source of truth that shapes every teammate's Copilot output toward the same architecture and security posture. The rules that matter most are the ones encoding our core domain invariants — strict tenant isolation and an immutable audit trail — because these are exactly the concerns an AI tends to overlook, yet they are the ones where a mistake becomes a real security or compliance failure. By fixing the stack, the layering boundaries, and these invariants up front, the file turns Copilot into a consistency mechanism instead of a source of drift.
+
 ### WRITE 2A — Bad-generation first impressions
 
 - **Copilot mode used:** Ask mode (Copilot Chat), single unconstrained prompt.
